@@ -1,0 +1,353 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+     <title>Personalized Travel Itinerary Planner</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Font Awesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+     <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                    },
+                    colors: {
+                        brand: {
+                            50: '#f0f9ff',
+                            100: '#e0f2fe',
+                            500: '#0ea5e9',
+                            600: '#0284c7',
+                            700: '#0369a1',
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <body class="bg-slate-50 text-slate-800 font-sans min-h-screen flex flex-col antialiased selection:bg-brand-500 selection:text-white">
+
+    <!-- Header / Navigation -->
+    <header class="bg-white border-b border-slate-200 sticky top-0 z-30 no-print">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+            <div class="flex items-center space-x-3">
+                <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-brand-600 to-indigo-600 flex items-center justify-center text-white shadow-md">
+                    <i class="fa-solid fa-compass text-xl"></i>
+                </div>
+                <div>
+                    <h1 class="font-bold text-lg text-slate-900 leading-tight">WanderPlan AI</h1>
+                    <p class="text-xs text-slate-500">Smart Itinerary & Travel Companion</p>
+                </div>
+            </div>
+
+            <div class="flex items-center space-x-2 sm:space-x-4">
+                <button onclick="exportJSON()" class="px-3 py-1.5 text-xs font-medium text-slate-600 hover:text-slate-900 bg-slate-100 hover:bg-slate-200 rounded-lg transition-colors flex items-center gap-1.5">
+                    <i class="fa-solid fa-download"></i> <span class="hidden sm:inline">Export JSON</span>
+                </button>
+                <button onclick="triggerImport()" class="px-3 py-1.5 text-xs font-medium text-slate-600 hover:text-slate-900 bg-slate-100 hover:bg-slate-200 rounded-lg transition-colors flex items-center gap-1.5">
+                    <i class="fa-solid fa-upload"></i> <span class="hidden sm:inline">Import</span>
+                </button>
+                <input type="file" id="importFileInput" class="hidden" accept=".json" onchange="importJSON(event)">
+
+                <button onclick="window.print()" class="px-4 py-1.5 text-xs font-semibold text-white bg-brand-600 hover:bg-brand-700 rounded-lg shadow transition-colors flex items-center gap-1.5">
+                    <i class="fa-solid fa-print"></i> <span>Print / PDF</span>
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Container -->
+    <main class="flex-grow max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-6">
+
+        <!-- Banner / Setup Bar -->
+        <section class="bg-white rounded-2xl border border-slate-200 p-5 sm:p-6 shadow-sm no-print">
+            <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 pb-4 border-b border-slate-100">
+                <div>
+                    <h2 class="text-xl font-bold text-slate-900" id="displayTripTitle">Plan Your Next Journey</h2>
+                    <p class="text-sm text-slate-500" id="displayTripSubtitle">Fill out your travel details to auto-generate a custom day-by-day itinerary.</p>
+                </div>
+                <button onclick="toggleSetupForm()" id="toggleFormBtn" class="text-xs font-semibold text-brand-600 hover:text-brand-700 flex items-center gap-1">
+                    <i class="fa-solid fa-sliders"></i> Edit Trip Parameters
+                </button>
+            </div>
+
+            <!-- Setup Form Grid -->
+            <form id="tripForm" onsubmit="handleTripSubmit(event)" class="mt-4 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
+                <div>
+                    <label class="block text-xs font-medium text-slate-700 mb-1">Destination</label>
+                    <div class="relative">
+                        <i class="fa-solid fa-location-dot absolute left-3 top-3 text-slate-400 text-sm"></i>
+                        <input type="text" id="destination" required placeholder="e.g. Kyoto, Japan" class="w-full pl-9 pr-3 py-2 text-sm border border-slate-300 rounded-lg focus:ring-2 focus:ring-brand-500 focus:border-brand-500 outline-none">
+                    </div>
+                </div>
+
+                <div>
+                    <label class="block text-xs font-medium text-slate-700 mb-1">Dates & Duration</label>
+                    <div class="grid grid-cols-2 gap-2">
+                        <input type="date" id="startDate" required class="w-full px-2 py-2 text-xs border border-slate-300 rounded-lg focus:ring-2 focus:ring-brand-500 focus:border-brand-500 outline-none">
+                        <input type="date" id="endDate" required class="w-full px-2 py-2 text-xs border border-slate-300 rounded-lg focus:ring-2 focus:ring-brand-500 focus:border-brand-500 outline-none">
+                    </div>
+                </div>
+
+                <div>
+                    <label class="block text-xs font-medium text-slate-700 mb-1">Budget Level</label>
+                    <select id="budgetCriterion" class="w-full px-3 py-2 text-sm border border-slate-300 rounded-lg focus:ring-2 focus:ring-brand-500 focus:border-brand-500 outline-none bg-white">
+                        <option value="Budget ($)">Budget ($)</option>
+                        <option value="Moderate ($$)" selected>Moderate ($$)</option>
+                        <option value="Luxury ($$$)">Luxury ($$$)</option>
+                    </select>
+                </div>
+
+                <div>
+                    <label class="block text-xs font-medium text-slate-700 mb-1">Travel Style</label>
+                    <select id="travelStyle" class="w-full px-3 py-2 text-sm border border-slate-300 rounded-lg focus:ring-2 focus:ring-brand-500 focus:border-brand-500 outline-none bg-white">
+                        <option value="Cultural">Cultural & Historic</option>
+                        <option value="Foodie">Foodie & Culinary</option>
+                        <option value="Adventure">Adventure & Nature</option>
+                        <option value="Relaxation">Relaxation & Wellness</option>
+                        <option value="Family">Family Friendly</option>
+                    </select>
+                </div>
+
+                <div class="sm:col-span-2 lg:col-span-1 flex items-end">
+                    <button type="submit" id="generateBtn" class="w-full py-2 px-4 bg-brand-600 hover:bg-brand-700 text-white text-sm font-semibold rounded-lg shadow-sm transition flex items-center justify-center gap-2">
+                        <i class="fa-solid fa-wand-magic-sparkles"></i> Build Itinerary
+                    </button>
+                </div>
+            </form>
+        </section>
+
+        <!-- Dynamic Navigation Tabs -->
+        <div class="flex border-b border-slate-200 no-print">
+            <button onclick="switchTab('itinerary')" id="tab-itinerary" class="tab-btn active px-4 py-3 font-semibold text-sm border-b-2 border-brand-600 text-brand-600 flex items-center gap-2">
+                <i class="fa-solid fa-calendar-days"></i> Itinerary
+            </button>
+            <button onclick="switchTab('budget')" id="tab-budget" class="tab-btn px-4 py-3 font-medium text-sm text-slate-500 border-b-2 border-transparent hover:text-slate-700 flex items-center gap-2">
+                <i class="fa-solid fa-wallet"></i> Budgeting Tracker
+            </button>
+            <button onclick="switchTab('checklist')" id="tab-checklist" class="tab-btn px-4 py-3 font-medium text-sm text-slate-500 border-b-2 border-transparent hover:text-slate-700 flex items-center gap-2">
+                <i class="fa-solid fa-list-check"></i> Checklist & Packing
+            </button>
+            <button onclick="switchTab('map')" id="tab-map" class="tab-btn px-4 py-3 font-medium text-sm text-slate-500 border-b-2 border-transparent hover:text-slate-700 flex items-center gap-2">
+                <i class="fa-solid fa-map-location-dot"></i> Map Explorer
+            </button>
+        </div>
+
+        <!-- TAB CONTENT 1: ITINERARY BUILDER -->
+        <div id="view-itinerary" class="tab-view space-y-6">
+            
+            <!-- Quick Summary Dashboard Cards -->
+            <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+                <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm flex items-center gap-3">
+                    <div class="w-10 h-10 rounded-lg bg-blue-50 text-blue-600 flex items-center justify-center text-lg">
+                        <i class="fa-solid fa-location-dot"></i>
+                    </div>
+                    <div>
+                        <p class="text-xs text-slate-500 font-medium">Destination</p>
+                        <p class="text-sm font-bold text-slate-800" id="summaryDest">Kyoto, Japan</p>
+                    </div>
+                </div>
+                <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm flex items-center gap-3">
+                    <div class="w-10 h-10 rounded-lg bg-emerald-50 text-emerald-600 flex items-center justify-center text-lg">
+                        <i class="fa-solid fa-clock"></i>
+                    </div>
+                    <div>
+                        <p class="text-xs text-slate-500 font-medium">Duration</p>
+                        <p class="text-sm font-bold text-slate-800" id="summaryDuration">3 Days</p>
+                    </div>
+                </div>
+                <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm flex items-center gap-3">
+                    <div class="w-10 h-10 rounded-lg bg-purple-50 text-purple-600 flex items-center justify-center text-lg">
+                        <i class="fa-solid fa-layer-group"></i>
+                    </div>
+                    <div>
+                        <p class="text-xs text-slate-500 font-medium">Style</p>
+                        <p class="text-sm font-bold text-slate-800" id="summaryStyle">Cultural</p>
+                    </div>
+                </div>
+                <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm flex items-center gap-3">
+                    <div class="w-10 h-10 rounded-lg bg-amber-50 text-amber-600 flex items-center justify-center text-lg">
+                        <i class="fa-solid fa-coins"></i>
+                    </div>
+                    <div>
+                        <p class="text-xs text-slate-500 font-medium">Budget</p>
+                        <p class="text-sm font-bold text-slate-800" id="summaryBudget">Moderate ($$)</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Day Selector & Action Bar -->
+            <div class="flex flex-wrap items-center justify-between gap-3 bg-white p-3 rounded-xl border border-slate-200 no-print">
+                <div class="flex items-center space-x-2 overflow-x-auto py-1" id="dayButtonsContainer">
+                    <!-- Dynamic Day Tabs appended here -->
+                </div>
+                <button onclick="addNewDay()" class="px-3 py-1.5 text-xs font-semibold text-brand-600 bg-brand-50 hover:bg-brand-100 rounded-lg transition flex items-center gap-1">
+                    <i class="fa-solid fa-plus"></i> Add Day
+                </button>
+            </div>
+
+            <!-- Loading Spinner State -->
+            <div id="aiLoading" class="hidden py-16 text-center">
+                <div class="inline-block animate-spin rounded-full h-10 w-10 border-4 border-slate-200 border-t-brand-600 mb-3"></div>
+                <p class="text-sm font-semibold text-slate-700">Crafting your personalized trip with AI...</p>
+                <p class="text-xs text-slate-400 mt-1">Curating local highlights and optimized schedules</p>
+            </div>
+
+            <!-- Day Activity Container -->
+            <div id="dayContentContainer" class="space-y-4">
+                <!-- Days will render here -->
+            </div>
+        </div>
+
+        <!-- TAB CONTENT 2: BUDGET TRACKER -->
+        <div id="view-budget" class="tab-view hidden space-y-6">
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <!-- Summary Card -->
+                <div class="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm space-y-4">
+                    <h3 class="font-bold text-slate-800">Budget Overview</h3>
+                    <div class="space-y-3">
+                        <div>
+                            <div class="flex justify-between text-xs font-semibold mb-1">
+                                <span class="text-slate-600">Total Spent / Target</span>
+                                <span id="budgetSummaryText">$0 / $1,500</span>
+                            </div>
+                            <div class="w-full bg-slate-100 rounded-full h-2.5 overflow-hidden">
+                                <div id="progressBar" class="bg-brand-500 h-2.5 rounded-full transition-all duration-300" style="width: 0%"></div>
+                            </div>
+                        </div>
+                        <div class="pt-3 border-t border-slate-100 grid grid-cols-2 gap-2 text-center">
+                            <div class="bg-slate-50 p-3 rounded-xl">
+                                <p class="text-xs text-slate-400">Total Allocated</p>
+                                <p class="text-base font-bold text-slate-800" id="totalAllocated">$1,500</p>
+                            </div>
+                            <div class="bg-slate-50 p-3 rounded-xl">
+                                <p class="text-xs text-slate-400">Remaining</p>
+                                <p class="text-base font-bold text-emerald-600" id="totalRemaining">$1,500</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Add Expense Form -->
+                <div class="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm md:col-span-2">
+                    <h3 class="font-bold text-slate-800 mb-4">Add Expense Item</h3>
+                    <form onsubmit="addBudgetItem(event)" class="grid grid-cols-1 sm:grid-cols-4 gap-3">
+                        <div class="sm:col-span-2">
+                            <input type="text" id="expenseName" placeholder="Expense description" required class="w-full px-3 py-2 text-sm border border-slate-300 rounded-lg outline-none focus:ring-2 focus:ring-brand-500">
+                        </div>
+                        <div>
+                            <select id="expenseCategory" class="w-full px-3 py-2 text-sm border border-slate-300 rounded-lg outline-none focus:ring-2 focus:ring-brand-500 bg-white">
+                                <option value="Lodging">Lodging</option>
+                                <option value="Food">Food & Drink</option>
+                                <option value="Transport">Transport</option>
+                                <option value="Activities">Activities</option>
+                                <option value="Misc">Misc</option>
+                            </select>
+                        </div>
+                        <div>
+                            <input type="number" id="expenseCost" placeholder="Cost ($)" step="0.01" required class="w-full px-3 py-2 text-sm border border-slate-300 rounded-lg outline-none focus:ring-2 focus:ring-brand-500">
+                        </div>
+                        <div class="sm:col-span-4 text-right">
+                            <button type="submit" class="px-4 py-2 bg-slate-900 hover:bg-slate-800 text-white text-xs font-semibold rounded-lg shadow-sm transition">
+                                <i class="fa-solid fa-plus"></i> Add Item
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            <!-- Expense List Table -->
+            <div class="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+                <div class="p-4 border-b border-slate-200 flex justify-between items-center">
+                    <h4 class="font-bold text-sm text-slate-800">Expense Breakdown</h4>
+                    <span class="text-xs text-slate-400" id="itemCount">0 Items</span>
+                </div>
+                <div class="overflow-x-auto">
+                    <table class="w-full text-left text-xs text-slate-600">
+                        <thead class="bg-slate-50 text-slate-500 font-semibold uppercase border-b border-slate-200">
+                            <tr>
+                                <th class="p-3">Description</th>
+                                <th class="p-3">Category</th>
+                                <th class="p-3 text-right">Amount ($)</th>
+                                <th class="p-3 text-center">Action</th>
+                            </tr>
+                        </thead>
+                        <tbody id="expenseTableBody" class="divide-y divide-slate-100">
+                            <!-- Expense rows -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- TAB CONTENT 3: CHECKLIST & PACKING -->
+        <div id="view-checklist" class="tab-view hidden space-y-6">
+            <div class="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm space-y-4">
+                <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+                    <div>
+                        <h3 class="font-bold text-slate-800">Trip Preparation Checklist</h3>
+                        <p class="text-xs text-slate-500">Ensure everything is packed and completed before departure.</p>
+                    </div>
+                    <form onsubmit="addChecklistItem(event)" class="flex gap-2 w-full sm:w-auto">
+                        <input type="text" id="newCheckitem" placeholder="New task or item..." required class="px-3 py-1.5 text-xs border border-slate-300 rounded-lg outline-none focus:ring-2 focus:ring-brand-500">
+                        <button type="submit" class="px-3 py-1.5 bg-brand-600 hover:bg-brand-700 text-white text-xs font-semibold rounded-lg transition">Add</button>
+                    </form>
+                </div>
+
+                <!-- Progress indicator -->
+                <div>
+                    <div class="flex justify-between text-xs text-slate-500 mb-1">
+                        <span>Checklist Completion</span>
+                        <span id="checklistProgressText">0%</span>
+                    </div>
+                    <div class="w-full bg-slate-100 rounded-full h-2 overflow-hidden">
+                        <div id="checklistProgressBar" class="bg-emerald-500 h-2 rounded-full transition-all duration-300" style="width: 0%"></div>
+                    </div>
+                </div>
+
+                <!-- Checkbox List -->
+                <div id="checklistContainer" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3 pt-2">
+                    <!-- Checkbox items -->
+                </div>
+            </div>
+        </div>
+
+        <!-- TAB CONTENT 4: MAP EXPLORER -->
+        <div id="view-map" class="tab-view hidden space-y-4">
+            <div class="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm">
+                <div class="flex justify-between items-center mb-4">
+                    <div>
+                        <h3 class="font-bold text-slate-800">Destination Map & Key Places</h3>
+                        <p class="text-xs text-slate-500">Preview destination landmarks and quick map directions.</p>
+                    </div>
+                    <button onclick="openExternalMap()" class="px-3 py-1.5 text-xs font-medium text-brand-600 bg-brand-50 hover:bg-brand-100 rounded-lg transition flex items-center gap-1.5">
+                        <i class="fa-solid fa-arrow-up-right-from-square"></i> Open in Google Maps
+                    </button>
+                </div>
+                
+                <!-- Map Placeholder Frame -->
+                <div class="w-full h-96 bg-slate-100 rounded-xl border border-slate-200 overflow-hidden relative flex items-center justify-center">
+                    <iframe id="googleMapIframe" class="w-full h-full border-0" loading="lazy" allowfullscreen src="https://maps.google.com/maps?q=Kyoto&t=&z=13&ie=UTF8&iwloc=&output=embed"></iframe>
+                </div>
+            </div>
+        </div>
+
+    </main>
+
+    <!-- Footer -->
+    <footer class="bg-white border-t border-slate-200 py-6 mt-12 no-print">
+        <div class="max-w-7xl mx-auto px-4 text-center text-xs text-slate-400">
+            Personalized Travel Itinerary Planner &bull; Powered by Gemini AI & UI Tools
+        </div>
+    </footer>
+    <script src="script.js"></script>
+</body>
+</html>
